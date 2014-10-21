@@ -5,6 +5,7 @@
 ## loading in netcdf files for Eocene analysis, and creating a dataframe
 
 library(ncdf)
+library(mgcv)
 source("C:/Documents/Science/PhD/Code/sp_mat_2_df.R")
 source("C:/Documents/Science/PhD/Code/palettes.R")
 source("C:/Documents/Science/PhD/Code/maps.R")
@@ -65,10 +66,10 @@ summary(v.tmp3)
 
 ## 2b. Check that pfsd is standard deviation -------------------------------
 # check the logic that this is sd by loading in the data by season
-tmp.s1 <- open.ncdf("1.1 Danian/quarterly/tdluao.pfcldjf.nc")
-tmp.s2 <- open.ncdf("1.1 Danian/quarterly/tdluao.pfclmam.nc")
-tmp.s3 <- open.ncdf("1.1 Danian/quarterly/tdluao.pfcljja.nc")
-tmp.s4 <- open.ncdf("1.1 Danian/quarterly/tdluao.pfclson.nc")
+tmp.s1 <- open.ncdf("1.1Danian/quarterly/tdluao.pfcldjf.nc")
+tmp.s2 <- open.ncdf("1.1Danian/quarterly/tdluao.pfclmam.nc")
+tmp.s3 <- open.ncdf("1.1Danian/quarterly/tdluao.pfcljja.nc")
+tmp.s4 <- open.ncdf("1.1Danian/quarterly/tdluao.pfclson.nc")
 
 # print the variables it contains
 print(tmp.s1)
@@ -94,18 +95,18 @@ sd(c(v.tmps1[50, 50], v.tmps2[50, 50], v.tmps3[50, 50], v.tmps4[50, 50]))
 v.tmp2[50, 50]
 
 # this is not the sd of seasons. Is it the sd of months
-tmp.m1 <- open.ncdf("1.1 Danian/monthly/tdluao.pfcljan.nc")
-tmp.m2 <- open.ncdf("1.1 Danian/monthly/tdluao.pfclfeb.nc")
-tmp.m3 <- open.ncdf("1.1 Danian/monthly/tdluao.pfclmar.nc")
-tmp.m4 <- open.ncdf("1.1 Danian/monthly/tdluao.pfclapr.nc")
-tmp.m5 <- open.ncdf("1.1 Danian/monthly/tdluao.pfclmay.nc")
-tmp.m6 <- open.ncdf("1.1 Danian/monthly/tdluao.pfcljun.nc")
-tmp.m7 <- open.ncdf("1.1 Danian/monthly/tdluao.pfcljul.nc")
-tmp.m8 <- open.ncdf("1.1 Danian/monthly/tdluao.pfclaug.nc")
-tmp.m9 <- open.ncdf("1.1 Danian/monthly/tdluao.pfclsep.nc")
-tmp.m10 <- open.ncdf("1.1 Danian/monthly/tdluao.pfcloct.nc")
-tmp.m11 <- open.ncdf("1.1 Danian/monthly/tdluao.pfclnov.nc")
-tmp.m12 <- open.ncdf("1.1 Danian/monthly/tdluao.pfcldec.nc")
+tmp.m1 <- open.ncdf("1.1Danian/monthly/tdluao.pfcljan.nc")
+tmp.m2 <- open.ncdf("1.1Danian/monthly/tdluao.pfclfeb.nc")
+tmp.m3 <- open.ncdf("1.1Danian/monthly/tdluao.pfclmar.nc")
+tmp.m4 <- open.ncdf("1.1Danian/monthly/tdluao.pfclapr.nc")
+tmp.m5 <- open.ncdf("1.1Danian/monthly/tdluao.pfclmay.nc")
+tmp.m6 <- open.ncdf("1.1Danian/monthly/tdluao.pfcljun.nc")
+tmp.m7 <- open.ncdf("1.1Danian/monthly/tdluao.pfcljul.nc")
+tmp.m8 <- open.ncdf("1.1Danian/monthly/tdluao.pfclaug.nc")
+tmp.m9 <- open.ncdf("1.1Danian/monthly/tdluao.pfclsep.nc")
+tmp.m10 <- open.ncdf("1.1Danian/monthly/tdluao.pfcloct.nc")
+tmp.m11 <- open.ncdf("1.1Danian/monthly/tdluao.pfclnov.nc")
+tmp.m12 <- open.ncdf("1.1Danian/monthly/tdluao.pfcldec.nc")
 
 # print the variables it contains
 print(tmp.m1)
@@ -219,7 +220,7 @@ ncdf.env <- function(filepath, filename, varname) {
 
 ## 5a. work out the variable name for mean SST ----------------------------------
 # open one of the files
-anncl.dl <- open.ncdf("1.1 Danian/annual/tdluao.pfclann.nc")
+anncl.dl <- open.ncdf("1.1Danian/annual/tdluao.pfclann.nc")
 print(anncl.dl)
 # two possible variables
 ocean.temp <- get.var.ncdf(anncl.dl, "temp_mm_uo") # ocean top-level temperature (K) - apparently though appears to be in deg C
@@ -312,6 +313,7 @@ with(ldg.m.data, points(-90:90, predict(gam(mean.pt ~ s(Lat)), data.frame(Lat = 
 ## 7. Data for 10deg -------------------------------------------------------
 
 ## 7a. Work out how to get the data ----------------------------------------
+tmp.3 <- open.ncdf("1.1Danian/annual/tdluao.pgclann.nc")
 print(tmp.3)
 str(v.tmp3)
 tmp.depths <- get.var.ncdf(tmp.3, "depth_1")
@@ -478,6 +480,8 @@ ypr.sal.mon$sep <- ncdf.env(paste(folders[1], "/monthly/", sep = ""), grep("pfcl
 ypr.sal.mon$oct <- ncdf.env(paste(folders[1], "/monthly/", sep = ""), grep("pfcloct", dir(), value = T), "salinity_mm_dpth")[, 3]
 ypr.sal.mon$nov <- ncdf.env(paste(folders[1], "/monthly/", sep = ""), grep("pfclnov", dir(), value = T), "salinity_mm_dpth")[, 3]
 ypr.sal.mon$dec <- ncdf.env(paste(folders[1], "/monthly/", sep = ""), grep("pfcldec", dir(), value = T), "salinity_mm_dpth")[, 3]
+ypr.sal.mon[3:14] <- ypr.sal.mon[3:14] * 1000 + 35
+summary(ypr.sal.mon)
 ypr.sal.mon$sd <- apply(ypr.sal.mon[,3:14], 1, sd, na.rm = T)
 ypr.env$sdsal <- ypr.sal.mon$sd
 
@@ -494,6 +498,8 @@ lut.sal.mon$sep <- ncdf.env(paste(folders[2], "/monthly/", sep = ""), grep("pfcl
 lut.sal.mon$oct <- ncdf.env(paste(folders[2], "/monthly/", sep = ""), grep("pfcloct", dir(), value = T), "salinity_mm_dpth")[, 3]
 lut.sal.mon$nov <- ncdf.env(paste(folders[2], "/monthly/", sep = ""), grep("pfclnov", dir(), value = T), "salinity_mm_dpth")[, 3]
 lut.sal.mon$dec <- ncdf.env(paste(folders[2], "/monthly/", sep = ""), grep("pfcldec", dir(), value = T), "salinity_mm_dpth")[, 3]
+lut.sal.mon[3:14] <- lut.sal.mon[3:14] * 1000 + 35
+summary(lut.sal.mon)
 lut.sal.mon$sd <- apply(lut.sal.mon[,3:14], 1, sd, na.rm = T)
 lut.env$sdsal <- lut.sal.mon$sd
 
@@ -510,6 +516,8 @@ bar.sal.mon$sep <- ncdf.env(paste(folders[3], "/monthly/", sep = ""), grep("pfcl
 bar.sal.mon$oct <- ncdf.env(paste(folders[3], "/monthly/", sep = ""), grep("pfcloct", dir(), value = T), "salinity_mm_dpth")[, 3]
 bar.sal.mon$nov <- ncdf.env(paste(folders[3], "/monthly/", sep = ""), grep("pfclnov", dir(), value = T), "salinity_mm_dpth")[, 3]
 bar.sal.mon$dec <- ncdf.env(paste(folders[3], "/monthly/", sep = ""), grep("pfcldec", dir(), value = T), "salinity_mm_dpth")[, 3]
+bar.sal.mon[3:14] <- bar.sal.mon[3:14] * 1000 + 35
+summary(bar.sal.mon)
 bar.sal.mon$sd <- apply(bar.sal.mon[,3:14], 1, sd, na.rm = T)
 bar.env$sdsal <- bar.sal.mon$sd
 
@@ -526,6 +534,8 @@ pri.sal.mon$sep <- ncdf.env(paste(folders[4], "/monthly/", sep = ""), grep("pfcl
 pri.sal.mon$oct <- ncdf.env(paste(folders[4], "/monthly/", sep = ""), grep("pfcloct", dir(), value = T), "salinity_mm_dpth")[, 3]
 pri.sal.mon$nov <- ncdf.env(paste(folders[4], "/monthly/", sep = ""), grep("pfclnov", dir(), value = T), "salinity_mm_dpth")[, 3]
 pri.sal.mon$dec <- ncdf.env(paste(folders[4], "/monthly/", sep = ""), grep("pfcldec", dir(), value = T), "salinity_mm_dpth")[, 3]
+pri.sal.mon[3:14] <- pri.sal.mon[3:14] * 1000 + 35
+summary(pri.sal.mon)
 pri.sal.mon$sd <- apply(pri.sal.mon[,3:14], 1, sd, na.rm = T)
 pri.env$sdsal <- pri.sal.mon$sd
 
@@ -547,4 +557,44 @@ with(pri.env, points(-90:90, predict(gam(sdsal ~ s(Lat)), data.frame(Lat = -90:9
 
 with(ldg.m.data, points(sdSal.0m ~ Lat, pch = ".", col = 5))
 with(ldg.m.data, points(-90:90, predict(gam(sdSal.0m ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+
+
+## 10. Salinity ------------------------------------------------------------
+# open one of the files
+print(anncl.dl)
+# variable
+salinity_mm_dpth
+
+## 10b. add mean sal as columns to the dataframes ---------------------------
+ypr.env$mnSal <- ncdf.env(paste(folders[1], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "salinity_mm_dpth")[,3] * 1000 + 35
+
+lut.env$mnSal <- ncdf.env(paste(folders[2], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "salinity_mm_dpth")[, 3] * 1000 + 35
+
+bar.env$mnSal <- ncdf.env(paste(folders[3], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "salinity_mm_dpth")[, 3] * 1000 + 35
+
+pri.env$mnSal <- ncdf.env(paste(folders[4], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "salinity_mm_dpth")[, 3] * 1000 + 35
+
+## 10c. check these look sensible on maps -----------------------------------
+with(ypr.env[!is.na(ypr.env$mnSal),], distrib.map(Long, Lat, mnSal, col.land = "steelblue2", pch = 15))
+with(lut.env[!is.na(lut.env$mnSal),], distrib.map(Long, Lat, mnSal, col.land = "steelblue2", pch = 15))
+with(bar.env[!is.na(bar.env$mnSal),], distrib.map(Long, Lat, mnSal, col.land = "steelblue2", pch = 15))
+with(pri.env[!is.na(pri.env$mnSal),], distrib.map(Long, Lat, mnSal, col.land = "steelblue2", pch = 15))
+
+with(ypr.env, plot(mnSal ~ Lat, pch = "."))
+with(lut.env, points(mnSal ~ Lat, pch = ".", col = 2))
+with(bar.env, points(mnSal ~ Lat, pch = ".", col = 3))
+with(pri.env, points(mnSal ~ Lat, pch = ".", col = 4))
+
+with(ypr.env, points(-90:90, predict(gam(mnSal ~ s(Lat)), data.frame(Lat = -90:90)), type = "l"))
+with(lut.env, points(-90:90, predict(gam(mnSal ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2))
+with(bar.env, points(-90:90, predict(gam(mnSal ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
+with(pri.env, points(-90:90, predict(gam(mnSal ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
+
+with(ldg.m.data, points(meanSal.1deg ~ Lat, pch = ".", col = 5))
+with(ldg.m.data, points(-90:90, predict(gam(meanSal.1deg ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+
+# 11. Ocean ---------------------------------------------------------------
+
+
+
 
