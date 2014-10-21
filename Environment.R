@@ -180,13 +180,14 @@ folders <- c("2.1Ypresian", "2.2Lutetian", "2.3Bartonian", "2.4Priabonian")
 eoc.df <- c("ypr.env", "lut.env", "bar.env", "pri.env")
 
 
-# 4. Create a function to add the values to a dataframe -------------------
+## 4. Create a function to add the values to a dataframe -------------------
 ncdf.env <- function(filepath, filename, varname) {
   # input:  filepath (string)- set the wd to this; paste(folders[i], "/annual/", sep = "")
   #         filename (string) - ncdf file; grep("pfclann", dir(), value = T)
   #         varname (string) - from the ncdf file
   # output: dataframe with the lat, long, values 
   # save old wd
+  print("N.B. uses longitude and latitude, not longitude_1 and latitude_1")
   oldwd <- getwd()
   # set the wd
   setwd(filepath)
@@ -204,6 +205,7 @@ ncdf.env <- function(filepath, filename, varname) {
   if (length(dim(tmp.var)) == 2) {
     return(sp.mat.2.df(long, lat, t(tmp.var)))
   } else {
+    print("N.B. using depth_1")
     depths <- get.var.ncdf(tmp.ncdf, "depth_1")
     df <- sp.mat.2.df(long, lat, t(tmp.var[, , 1]))
     names(df)[ncol(df)] <- round(depths[1])
@@ -236,28 +238,29 @@ sum(ocean.temp != ocean.temp2, na.rm = T)
 tmp <- which(ocean.temp[, 20] != ocean.temp2[, 20])
 cbind(ocean.temp[tmp, 20], ocean.temp2[tmp, 20])
 
-# differences appear to only be in the last value of the decimals, so basically identical. Therefore pick one: ocean top-level temperature
+# differences appear to only be in the last value of the decimals, so basically identical. 
+# looking at the info, it seems that the top-level temperature is at an unspecified depth (presumably the surface), while the potential temperature is at depth "depth_1"
+
+get.var.ncdf(anncl.dl, "depth_1")
+
+# In otherwords, one is surface and one is 5 metres (I think)
+# Therefore pick ocean top-level temperature
 
 close(anncl.dl)
 
 ## 5b. add mean SST as columns to the dataframes ---------------------------
-tmp <- ncdf.env(paste(folders[1], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "temp_mm_uo")
-ypr.env$mnSST <- tmp[, 3]
-
-tmp <- ncdf.env(paste(folders[2], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "temp_mm_uo")
-lut.env$mnSST <- tmp[, 3]
-
-tmp <- ncdf.env(paste(folders[3], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "temp_mm_uo")
-bar.env$mnSST <- tmp[, 3]
-
-tmp <- ncdf.env(paste(folders[4], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "temp_mm_uo")
-pri.env$mnSST <- tmp[, 3]
+ypr.env$mnSST <- ncdf.env(paste(folders[1], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "temp_mm_uo")[, 3]
+lut.env$mnSST <- ncdf.env(paste(folders[2], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "temp_mm_uo")[, 3]
+bar.env$mnSST <- ncdf.env(paste(folders[3], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "temp_mm_uo")[, 3]
+pri.env$mnSST <- ncdf.env(paste(folders[4], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "temp_mm_uo")[, 3]
 
 ## 5c. check these look sensible on maps -----------------------------------
-with(ypr.env[!is.na(ypr.env$mnSST),], distrib.map(Long, Lat, mnSST, col.land = "steelblue2", pch = 15))
-with(lut.env[!is.na(lut.env$mnSST),], distrib.map(Long, Lat, mnSST, col.land = "steelblue2", pch = 15))
-with(bar.env[!is.na(bar.env$mnSST),], distrib.map(Long, Lat, mnSST, col.land = "steelblue2", pch = 15))
-with(pri.env[!is.na(pri.env$mnSST),], distrib.map(Long, Lat, mnSST, col.land = "steelblue2", pch = 15))
+with(ypr.env[!is.na(ypr.env$mnSST),], distrib.map(Long, Lat, mnSST, col.land = "steelblue2", pch = 15, palette = "matlab.like", min.col = -2, max.col = 38))
+with(lut.env[!is.na(lut.env$mnSST),], distrib.map(Long, Lat, mnSST, col.land = "steelblue2", pch = 15, palette = "matlab.like"))
+with(bar.env[!is.na(bar.env$mnSST),], distrib.map(Long, Lat, mnSST, col.land = "steelblue2", pch = 15, palette = "matlab.like"))
+with(pri.env[!is.na(pri.env$mnSST),], distrib.map(Long, Lat, mnSST, col.land = "steelblue2", pch = 15, palette = "matlab.like"))
+
+# these can be checked against the images in Gordon's talk, and they seem to match, suggesting I have extracted this data correctly
 
 with(ypr.env, plot(mnSST ~ Lat, pch = "."))
 with(lut.env, points(mnSST ~ Lat, pch = ".", col = 2))
@@ -269,26 +272,23 @@ with(lut.env, points(-90:90, predict(gam(mnSST ~ s(Lat)), data.frame(Lat = -90:9
 with(bar.env, points(-90:90, predict(gam(mnSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
 with(pri.env, points(-90:90, predict(gam(mnSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
 
-with(ldg.m.data, points(meanSST.1deg ~ Lat, pch = ".", col = 5))
-with(ldg.m.data, points(-90:90, predict(gam(meanSST.1deg ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+with(ldg.p.data, points(meanSST.1deg ~ Lat, pch = ".", col = 5))
+with(ldg.p.data, points(-90:90, predict(gam(meanSST.1deg ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+
+# again, checked against Gordon's talk
+# given this matches, it seems likely that the method I've used to extract the data is working. (Although this needs checking for the depth values).
 
 
 ## 6. Data for MLD -------------------------------------------------------
 
 ## 6a. Load in the data ----------------------------------------------------
 print(anncl.dl)
+# again uses longitude /latitude, and depth is unspecified (unsurprisingly)
 
-tmp <- ncdf.env(paste(folders[1], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "mixLyrDpth_mm_uo")
-ypr.env$MLD <- tmp[, 3]
-
-tmp <- ncdf.env(paste(folders[2], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "mixLyrDpth_mm_uo")
-lut.env$MLD <- tmp[, 3]
-
-tmp <- ncdf.env(paste(folders[3], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "mixLyrDpth_mm_uo")
-bar.env$MLD <- tmp[, 3]
-
-tmp <- ncdf.env(paste(folders[4], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "mixLyrDpth_mm_uo")
-pri.env$MLD <- tmp[, 3]
+ypr.env$MLD <- ncdf.env(paste(folders[1], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "mixLyrDpth_mm_uo")[, 3]
+lut.env$MLD <- ncdf.env(paste(folders[2], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "mixLyrDpth_mm_uo")[, 3]
+bar.env$MLD <- ncdf.env(paste(folders[3], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "mixLyrDpth_mm_uo")[, 3]
+pri.env$MLD <- ncdf.env(paste(folders[4], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "mixLyrDpth_mm_uo")[, 3]
 
 ## 6b. check these look sensible -------------------------------------------
 with(ypr.env[!is.na(ypr.env$MLD),], distrib.map(Long, Lat, MLD, col.land = "steelblue2", pch = 15))
@@ -296,18 +296,45 @@ with(lut.env[!is.na(lut.env$MLD),], distrib.map(Long, Lat, MLD, col.land = "stee
 with(bar.env[!is.na(bar.env$MLD),], distrib.map(Long, Lat, MLD, col.land = "steelblue2", pch = 15))
 with(pri.env[!is.na(pri.env$MLD),], distrib.map(Long, Lat, MLD, col.land = "steelblue2", pch = 15))
 
-with(ypr.env, plot(MLD ~ Lat, pch = "."))
-with(lut.env, points(MLD ~ Lat, pch = ".", col = 2))
-with(bar.env, points(MLD ~ Lat, pch = ".", col = 3))
-with(pri.env, points(MLD ~ Lat, pch = ".", col = 4))
+with(ypr.env, plot(-MLD ~ Lat, pch = "."))
+with(lut.env, points(-MLD ~ Lat, pch = ".", col = 2))
+with(bar.env, points(-MLD ~ Lat, pch = ".", col = 3))
+with(pri.env, points(-MLD ~ Lat, pch = ".", col = 4))
 
-with(ypr.env, points(-90:90, predict(gam(MLD ~ s(Lat)), data.frame(Lat = -90:90)), type = "l"))
-with(lut.env, points(-90:90, predict(gam(MLD ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2))
-with(bar.env, points(-90:90, predict(gam(MLD ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
-with(pri.env, points(-90:90, predict(gam(MLD ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
+with(ypr.env, points(-90:90, predict(gam(-MLD ~ s(Lat)), data.frame(Lat = -90:90)), type = "l"))
+with(lut.env, points(-90:90, predict(gam(-MLD ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2))
+with(bar.env, points(-90:90, predict(gam(-MLD ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
+with(pri.env, points(-90:90, predict(gam(-MLD ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
 
-with(ldg.m.data, points(mean.pt ~ Lat, pch = ".", col = 5))
-with(ldg.m.data, points(-90:90, predict(gam(mean.pt ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+with(ldg.p.data, points(-mean.pt ~ Lat, pch = ".", col = 5))
+with(ldg.p.data, points(-90:90, predict(gam(-mean.pt ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+
+# resonable, but it looks like 0 is the equivalent of NA
+summary(ypr.env$mnSST) # 2628 NAs
+sum(ypr.env$MLD == 0) # 2628 
+#So change 0 to NA
+ypr.env$MLD[ypr.env$MLD == 0] <- NA
+# check its worked
+summary(ypr.env$MLD)
+# change others
+lut.env$MLD[lut.env$MLD == 0] <- NA
+bar.env$MLD[bar.env$MLD == 0] <- NA
+pri.env$MLD[pri.env$MLD == 0] <- NA
+
+# try logging to reduce the variance
+with(ypr.env, plot(-log(MLD + 1) ~ Lat, pch = "."))
+with(lut.env, points(-log(MLD + 1) ~ Lat, pch = ".", col = 2))
+with(bar.env, points(-log(MLD + 1) ~ Lat, pch = ".", col = 3))
+with(pri.env, points(-log(MLD + 1) ~ Lat, pch = ".", col = 4))
+
+with(ypr.env, points(-90:90, -predict(gam(log(MLD + 1) ~ s(Lat)), data.frame(Lat = -90:90)), type = "l"))
+with(lut.env, points(-90:90, -predict(gam(log(MLD + 1) ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2))
+with(bar.env, points(-90:90, -predict(gam(log(MLD + 1) ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
+with(pri.env, points(-90:90, -predict(gam(log(MLD + 1) ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
+
+with(ldg.p.data, points(-log(mean.pt + 1) ~ Lat, pch = ".", col = 5))
+with(ldg.p.data, points(-90:90, -predict(gam(log(mean.pt + 1) ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+# seems to roughly work
 
 
 ## 7. Data for 10deg -------------------------------------------------------
@@ -317,6 +344,15 @@ tmp.3 <- open.ncdf("1.1Danian/annual/tdluao.pgclann.nc")
 print(tmp.3)
 str(v.tmp3)
 tmp.depths <- get.var.ncdf(tmp.3, "depth_1")
+
+# what's the difference between insitu_T and temp_ym
+depth.tmp1 <- get.var.ncdf(tmp.3, "insitu_T_ym_dpth")
+depth.tmp2 <- get.var.ncdf(tmp.3, "temp_ym_dpth")
+
+str(depth.tmp1)
+str(depth.tmp2)
+cbind(depth.tmp1[, 40, 4], depth.tmp2[, 40, 4])
+# the two seem to be very similar. Currently pick insitu_T
 
 # write a function to get the 10deg depth from a row
 eoc.depth10 <- function (x) {
@@ -361,8 +397,22 @@ with(lut.env, points(-90:90, predict(gam(-depth10 ~ s(Lat)), data.frame(Lat = -9
 with(bar.env, points(-90:90, predict(gam(-depth10 ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
 with(pri.env, points(-90:90, predict(gam(-depth10 ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
 
-with(ldg.m.data, points(-depth10deg ~ Lat, pch = ".", col = 5))
-with(ldg.m.data, points(-90:90, predict(gam(-depth10deg ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+with(ldg.p.data, points(-depth10deg ~ Lat, pch = ".", col = 5))
+with(ldg.p.data, points(-90:90, predict(gam(-depth10deg ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+
+# again try logging
+with(ypr.env, plot(-log(depth10 + 1) ~ Lat, pch = "."))
+with(lut.env, points(-log(depth10 + 1) ~ Lat, pch = ".", col = 2))
+with(bar.env, points(-log(depth10 + 1) ~ Lat, pch = ".", col = 3))
+with(pri.env, points(-log(depth10 + 1) ~ Lat, pch = ".", col = 4))
+
+with(ypr.env, points(-90:90, predict(gam(-log(depth10 + 1) ~ s(Lat)), data.frame(Lat = -90:90)), type = "l"))
+with(lut.env, points(-90:90, predict(gam(-log(depth10 + 1) ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2))
+with(bar.env, points(-90:90, predict(gam(-log(depth10 + 1) ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
+with(pri.env, points(-90:90, predict(gam(-log(depth10 + 1) ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
+
+with(ldg.p.data, points(-log(depth10deg + 1) ~ Lat, pch = ".", col = 5))
+with(ldg.p.data, points(-90:90, predict(gam(-log(depth10deg + 1) ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
 
 
 ## 8. sd SST ---------------------------------------------------------------
@@ -390,6 +440,11 @@ ypr.SST.mon$nov <- ncdf.env(paste(folders[1], "/monthly/", sep = ""), grep("pfcl
 ypr.SST.mon$dec <- ncdf.env(paste(folders[1], "/monthly/", sep = ""), grep("pfcldec", dir(), value = T), "temp_mm_uo")[, 3]
 ypr.SST.mon$sd <- apply(ypr.SST.mon[,3:14], 1, sd, na.rm = T)
 ypr.env$sdSST <- ypr.SST.mon$sd
+
+# reality check
+mean(as.numeric(ypr.SST.mon[1400,3:14]))
+ypr.env[1400,]
+# these are basically identical, so likely to be correct
 
 lut.SST.mon <- ncdf.env(paste(folders[2], "/monthly/", sep = ""), grep("pfcljan", dir(), value = T), "temp_mm_uo")
 names(lut.SST.mon)[3] <- "jan"
@@ -445,23 +500,24 @@ with(lut.env[!is.na(lut.env$sdSST),], distrib.map(Long, Lat, sdSST, col.land = "
 with(bar.env[!is.na(bar.env$sdSST),], distrib.map(Long, Lat, sdSST, col.land = "steelblue2", pch = 15))
 with(pri.env[!is.na(pri.env$sdSST),], distrib.map(Long, Lat, sdSST, col.land = "steelblue2", pch = 15))
 
-with(ypr.env, plot(-sdSST ~ Lat, pch = "."))
-with(lut.env, points(-sdSST ~ Lat, pch = ".", col = 2))
-with(bar.env, points(-sdSST ~ Lat, pch = ".", col = 3))
-with(pri.env, points(-sdSST ~ Lat, pch = ".", col = 4))
+with(ypr.env, plot(sdSST ~ Lat, pch = "."))
+with(lut.env, points(sdSST ~ Lat, pch = ".", col = 2))
+with(bar.env, points(sdSST ~ Lat, pch = ".", col = 3))
+with(pri.env, points(sdSST ~ Lat, pch = ".", col = 4))
 
-with(ypr.env, points(-90:90, predict(gam(-sdSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l"))
-with(lut.env, points(-90:90, predict(gam(-sdSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2))
-with(bar.env, points(-90:90, predict(gam(-sdSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
-with(pri.env, points(-90:90, predict(gam(-sdSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
+with(ypr.env, points(-90:90, predict(gam(sdSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l"))
+with(lut.env, points(-90:90, predict(gam(sdSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2))
+with(bar.env, points(-90:90, predict(gam(sdSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
+with(pri.env, points(-90:90, predict(gam(sdSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
 
-with(ldg.m.data, points(-sdSST.1deg ~ Lat, pch = ".", col = 5))
-with(ldg.m.data, points(-90:90, predict(gam(-sdSST.1deg ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+with(ldg.p.data, points(sdSST.1deg ~ Lat, pch = ".", col = 5))
+with(ldg.p.data, points(-90:90, predict(gam(sdSST.1deg ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
 
 
-# 9. SD salinity ----------------------------------------------------------
+## 9. SD salinity ----------------------------------------------------------
+
+## 9a. How to calculate ----------------------------------------------------
 dan.aug <- open.ncdf("1.1Danian/monthly/tdluao.pfclaug.nc")
-
 # print the variables it contains
 print(dan.aug)
 # same as annual but monthly
@@ -555,15 +611,30 @@ with(lut.env, points(-90:90, predict(gam(sdsal ~ s(Lat)), data.frame(Lat = -90:9
 with(bar.env, points(-90:90, predict(gam(sdsal ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
 with(pri.env, points(-90:90, predict(gam(sdsal ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
 
-with(ldg.m.data, points(sdSal.0m ~ Lat, pch = ".", col = 5))
-with(ldg.m.data, points(-90:90, predict(gam(sdSal.0m ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+with(ldg.p.data, points(sdSal.0m ~ Lat, pch = ".", col = 5))
+with(ldg.p.data, points(-90:90, predict(gam(sdSal.0m ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
 
+# maybe log the data
+with(ypr.env, plot(log(sdsal + 1) ~ Lat, pch = "."))
+with(lut.env, points(log(sdsal + 1) ~ Lat, pch = ".", col = 2))
+with(bar.env, points(log(sdsal + 1) ~ Lat, pch = ".", col = 3))
+with(pri.env, points(log(sdsal + 1) ~ Lat, pch = ".", col = 4))
+
+with(ypr.env, points(-90:90, predict(gam(log(sdsal + 1) ~ s(Lat)), data.frame(Lat = -90:90)), type = "l"))
+with(lut.env, points(-90:90, predict(gam(log(sdsal + 1) ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2))
+with(bar.env, points(-90:90, predict(gam(log(sdsal + 1) ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
+with(pri.env, points(-90:90, predict(gam(log(sdsal + 1) ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
+
+with(ldg.p.data, points(log(sdSal.0m + 1) ~ Lat, pch = ".", col = 5))
+with(ldg.p.data, points(-90:90, predict(gam(log(sdSal.0m + 1) ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
 
 ## 10. Salinity ------------------------------------------------------------
+
+## 10a. What variable ------------------------------------------------------
 # open one of the files
 print(anncl.dl)
 # variable
-salinity_mm_dpth
+# "salinity_mm_dpth"
 
 ## 10b. add mean sal as columns to the dataframes ---------------------------
 ypr.env$mnSal <- ncdf.env(paste(folders[1], "/annual/", sep = ""), grep("pfclann", dir(), value = T), "salinity_mm_dpth")[,3] * 1000 + 35
@@ -590,10 +661,10 @@ with(lut.env, points(-90:90, predict(gam(mnSal ~ s(Lat)), data.frame(Lat = -90:9
 with(bar.env, points(-90:90, predict(gam(mnSal ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
 with(pri.env, points(-90:90, predict(gam(mnSal ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
 
-with(ldg.m.data, points(meanSal.1deg ~ Lat, pch = ".", col = 5))
-with(ldg.m.data, points(-90:90, predict(gam(meanSal.1deg ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+with(ldg.p.data, points(meanSal.0m ~ Lat, pch = ".", col = 5))
+with(ldg.p.data, points(-90:90, predict(gam(meanSal.0m ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
 
-# 11. Ocean ---------------------------------------------------------------
+
 
 
 
