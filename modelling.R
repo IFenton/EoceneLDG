@@ -2,10 +2,11 @@
 
 library(spdep)
 library(ncf)
-source("C:/Documents/Science/Work/1311 LDGPaper/Code/140420SARerrOptimising_NC.R")
+source("C:/Documents/Science/PhD/Work/1311 LDGPaper/Code/140420SARerrOptimising_NC.R")
 source("C:/Documents/Science/PhD/Code/sar_predict.R")
 
-# 1. run an ols richness model -----------------------------------------------------
+# 1. try the model predictions -----------------------------------------------------
+#run an ols richness model
 reoc.rsr.l0 <- lm(rarefy.sr ~ (poly(meanSST.1deg, 3) + sdSST.1deg + mean.pt + depth10deg + meanSal.0m + sdSal.0m + dissolution)^2, data = ldg.m.data)
 summary(reoc.rsr.l0)
 
@@ -66,94 +67,168 @@ with(ypr.pred, plot(Lat, rarefy.sr, pch = "."))
 with(lut.pred, points(Lat, rarefy.sr, pch = ".", col = 2))
 with(bar.pred, points(Lat, rarefy.sr, pch = ".", col = 3))
 with(pri.pred, points(Lat, rarefy.sr, pch = ".", col = 4))
+# very high points, might be driven by salinity
 
 
-# 2. evenness -------------------------------------------------------------
-reoc.eve.l0 <- lm(simpsonEve ~ (poly(meanSST.1deg, 3) + sdSST.1deg + mean.pt + depth10deg + meanSal.0m + sdSal.0m + dissolution)^2, data = ldg.m.data)
-summary(reoc.eve.l0)
+## 2. Predicting with logs -------------------------------------------------
+# the data is giving very strange predictions, so try with logged depths and richness (to remove negatives)
 
-# look for spatial autocorrelation in the residuals
-# using spline.correlog
-reoc.eve.l0.sac <- with(ldg.m.data, spline.correlog(Long, Lat, reoc.eve.l0$residuals, latlon = TRUE, resamp = 10))
-summary(reoc.eve.l0.sac)
-
-# run sar model
-reoc.eve.sarW <- with(ldg.m.data, sar.optimised(reoc.eve.l0.sac$real$x.intercept, rarefysr ~ (poly(meanSST.1deg, 3) + sdSST.1deg + mean.pt + depth10deg + meanSal.0m + sdSal.0m + dissolution)^2, ldg.coords, style = "W", tol = 4, longlat = TRUE, zero.policy = TRUE))
-summary(reoc.eve.sarW$obj, Nagelkerke = TRUE) # 
-AIC(reoc.eve.sarW$obj) # 
-
-# predict
-ypr.env$simpsonEve <- sar.predict(reoc.eve.sarW, newdata = ypr.env, olddata = ldg.m.data)
-summary(ypr.env$simpsonEve)
-with(ypr.env, distrib.map(Long, Lat, simpsonEve))
-
-lut.env$simpsonEve <- sar.predict(reoc.eve.sarW, newdata = lut.env, olddata = ldg.m.data)
-summary(lut.env$simpsonEve)
-with(lut.env, distrib.map(Long, Lat, simpsonEve))
-
-bar.env$simpsonEve <- sar.predict(reoc.eve.sarW, newdata = bar.env, olddata = ldg.m.data)
-summary(bar.env$simpsonEve)
-with(bar.env, distrib.map(Long, Lat, simpsonEve))
-
-pri.env$simpsonEve <- sar.predict(reoc.eve.sarW, newdata = pri.env, olddata = ldg.m.data)
-summary(pri.env$simpsonEve)
-with(pri.env, distrib.map(Long, Lat, simpsonEve))
-
-# 3. Average community age ------------------------------------------------
-reoc.lna.l0 <- lm(MorphoAgeAbun ~ (poly(meanSST.1deg, 3) + sdSST.1deg + mean.pt + depth10deg + meanSal.0m + sdSal.0m + dissolution)^2, data = ldg.m.data)
-summary(reoc.lna.l0)
+reoc.rsr.log.l0 <- lm(log(rarefy.sr + 1) ~ (poly(meanSST.1deg, 3) + sdSST.1deg + log(mean.pt + 1) + log(depth10deg + 1) + meanSal.0m + sdSal.0m + dissolution)^2, data = ldg.m.data)
+summary(reoc.rsr.log.l0)
 
 # look for spatial autocorrelation in the residuals
 # using spline.correlog
-reoc.lna.l0.sac <- with(ldg.m.data, spline.correlog(Long, Lat, reoc.lna.l0$residuals, latlon = TRUE, resamp = 10))
-summary(reoc.lna.l0.sac)
+reoc.rsr.log.l0.sac <- with(ldg.m.data, spline.correlog(Long, Lat, reoc.rsr.log.l0$residuals, latlon = TRUE, resamp = 10))
+summary(reoc.rsr.log.l0.sac)
 
 # run sar model
-reoc.lna.sarW <- with(ldg.m.data, sar.optimised(reoc.lna.l0.sac$real$x.intercept, rarefysr ~ (poly(meanSST.1deg, 3) + sdSST.1deg + mean.pt + depth10deg + meanSal.0m + sdSal.0m + dissolution)^2, ldg.coords, style = "W", tol = 4, longlat = TRUE, zero.policy = TRUE))
-summary(reoc.lna.sarW$obj, Nagelkerke = TRUE) # 
-AIC(reoc.lna.sarW$obj) # 
+ldg.coords <- cbind(ldg.m.data$Long,ldg.m.data$Lat)
+ldg.coords <- as.matrix(ldg.coords)
+reoc.rsr.log.sarW <- with(ldg.m.data, sar.optimised(reoc.rsr.log.l0.sac$real$x.intercept,log(rarefy.sr + 1) ~ (poly(meanSST.1deg, 3) + sdSST.1deg + log(mean.pt + 1) + log(depth10deg + 1) + meanSal.0m + sdSal.0m + dissolution)^2, ldg.coords, style = "W", tol = 4, longlat = TRUE, zero.policy = TRUE))
+reoc.log.op.nb <- dnearneigh(ldg.coords, 0, reoc.rsr.log.sarW$dist, longlat = TRUE)
+reoc.log.op.w <- nb2listw(reoc.log.op.nb, glist = NULL, style = "W", zero.policy = TRUE)
+reoc.rsr.log.op0 <- errorsarlm(reoc.rsr.log.sarW$mod, listw = reoc.log.op.w, zero.policy = TRUE, tol.solve = 1e-18)
+summary(reoc.rsr.log.op0, Nagelkerke = TRUE) # 0.89483
+AIC(reoc.rsr.log.op0) # -697.957
+
+# check predictions with recent data
+recent.log.rsr <- exp(sar.predict(reoc.rsr.log.op0, newdata = ldg.p.data, olddata = ldg.m.data)[, 1] - 1)
+with(ldg.p.data, distrib.map(Long, Lat, recent.log.rsr))
+with(ldg.p.data[which(recent.log.rsr > 50), ], distrib.map(Long, Lat, recent.log.rsr[recent.log.rsr > 50]))
+with(ldg.p.data[which(recent.log.rsr < 50), ], distrib.map(Long, Lat, recent.log.rsr[recent.log.rsr < 50]))
+# this fails at extreme values, so get high richness predicted in northern high latitudes
 
 # predict
-ypr.env$MorphoAgeAbun <- sar.predict(reoc.lna.sarW, newdata = ypr.env, olddata = ldg.m.data)
-summary(ypr.env$MorphoAgeAbun)
-with(ypr.env, distrib.map(Long, Lat, MorphoAgeAbun))
+ypr.pred$log.rsr <- exp(sar.predict(reoc.rsr.log.op0, newdata = ypr.pred, olddata = ldg.m.data)[, 1] - 1)
+summary(ypr.pred$log.rsr)
+with(ypr.pred, distrib.map(Long, Lat, log.rsr, pch = 15, col.land = "steelblue2"))
 
-lut.env$MorphoAgeAbun <- sar.predict(reoc.lna.sarW, newdata = lut.env, olddata = ldg.m.data)
-summary(lut.env$MorphoAgeAbun)
-with(lut.env, distrib.map(Long, Lat, MorphoAgeAbun))
+lut.pred$log.rsr <- exp(sar.predict(reoc.rsr.log.op0, newdata = lut.pred, olddata = ldg.m.data)[, 1] - 1)
+summary(lut.pred$log.rsr)
+with(lut.pred, distrib.map(Long, Lat, log.rsr, pch = 15, col.land = "steelblue2"))
 
-bar.env$MorphoAgeAbun <- sar.predict(reoc.lna.sarW, newdata = bar.env, olddata = ldg.m.data)
-summary(bar.env$MorphoAgeAbun)
-with(bar.env, distrib.map(Long, Lat, MorphoAgeAbun))
+bar.pred$log.rsr <- exp(sar.predict(reoc.rsr.log.op0, newdata = bar.pred, olddata = ldg.m.data)[, 1] - 1)
+summary(bar.pred$log.rsr)
+with(bar.pred, distrib.map(Long, Lat, log.rsr, pch = 15, col.land = "steelblue2"))
 
-pri.env$MorphoAgeAbun <- sar.predict(reoc.lna.sarW, newdata = pri.env, olddata = ldg.m.data)
-summary(pri.env$MorphoAgeAbun)
-with(pri.env, distrib.map(Long, Lat, MorphoAgeAbun))
+pri.pred$log.rsr <- exp(sar.predict(reoc.rsr.log.op0, newdata = pri.pred, olddata = ldg.m.data)[, 1] - 1)
+summary(pri.pred$log.rsr)
+with(pri.pred, distrib.map(Long, Lat, log.rsr, pch = 15, col.land = "steelblue2"))
+
+with(ypr.pred, plot(Lat, log.rsr, pch = "."))
+with(lut.pred, points(Lat, log.rsr, pch = ".", col = 2))
+with(bar.pred, points(Lat, log.rsr, pch = ".", col = 3))
+with(pri.pred, points(Lat, log.rsr, pch = ".", col = 4))
+# very unconvincing
 
 
-# 4. predicting with only temperature -----------------------------------------------------
+## 3. Only logging richness ------------------------------------------------
+# the data is giving very strange predictions, so try with logged depths and richness (to remove negatives)
+# linear model
+reoc.rsr.log2.l0 <- lm(log(rarefy.sr + 1) ~ (poly(meanSST.1deg, 3) + sdSST.1deg + mean.pt + depth10deg + meanSal.0m + sdSal.0m + dissolution)^2, data = ldg.m.data)
+summary(reoc.rsr.log2.l0)
+
+# look for spatial autocorrelation in the residuals
+# using spline.correlog
+reoc.rsr.log2.l0.sac <- with(ldg.m.data, spline.correlog(Long, Lat, reoc.rsr.log2.l0$residuals, latlon = TRUE, resamp = 10))
+summary(reoc.rsr.log2.l0.sac)
+
+# run sar model
+ldg.coords <- cbind(ldg.m.data$Long,ldg.m.data$Lat)
+ldg.coords <- as.matrix(ldg.coords)
+reoc.rsr.log2.sarW <- with(ldg.m.data, sar.optimised(reoc.rsr.log2.l0.sac$real$x.intercept,log(rarefy.sr + 1) ~ (poly(meanSST.1deg, 3) + sdSST.1deg + mean.pt + depth10deg + meanSal.0m + sdSal.0m + dissolution)^2, ldg.coords, style = "W", tol = 4, longlat = TRUE, zero.policy = TRUE))
+reoc.log2.op.nb <- dnearneigh(ldg.coords, 0, reoc.rsr.log2.sarW$dist, longlat = TRUE)
+reoc.log2.op.w <- nb2listw(reoc.log2.op.nb, glist = NULL, style = "W", zero.policy = TRUE)
+reoc.rsr.log2.op0 <- errorsarlm(reoc.rsr.log2.sarW$mod, listw = reoc.log2.op.w, zero.policy = TRUE, tol.solve = 1e-18)
+summary(reoc.rsr.log2.op0, Nagelkerke = TRUE) # 0.89462 
+AIC(reoc.rsr.log2.op0) # -696.6558
+
+# check predictions with recent data
+recent.log2.rsr <- exp(sar.predict(reoc.rsr.log2.op0, newdata = ldg.p.data, olddata = ldg.m.data)[, 1] - 1)
+with(ldg.p.data, distrib.map(Long, Lat, recent.log2.rsr))
+with(ldg.p.data[which(recent.log2.rsr > 30), ], distrib.map(Long, Lat, recent.log2.rsr[recent.log2.rsr > 50]))
+with(ldg.p.data[which(recent.log2.rsr < 30), ], distrib.map(Long, Lat, recent.log2.rsr[recent.log2.rsr < 50]))
+# still giving some slightly strange predictions
+# don't think sarlm can handle poisson and the data isn't integer
+
+# predict
+ypr.pred$log2.rsr <- exp(sar.predict(reoc.rsr.log2.op0, newdata = ypr.pred, olddata = ldg.m.data)[, 1] - 1)
+summary(ypr.pred$log2.rsr)
+with(ypr.pred, distrib.map(Long, Lat, log2.rsr, pch = 15, col.land = "steelblue2"))
+
+lut.pred$log2.rsr <- exp(sar.predict(reoc.rsr.log2.op0, newdata = lut.pred, olddata = ldg.m.data)[, 1] - 1)
+summary(lut.pred$log2.rsr)
+with(lut.pred, distrib.map(Long, Lat, log2.rsr, pch = 15, col.land = "steelblue2"))
+
+bar.pred$log2.rsr <- exp(sar.predict(reoc.rsr.log2.op0, newdata = bar.pred, olddata = ldg.m.data)[, 1] - 1)
+summary(bar.pred$log2.rsr)
+with(bar.pred, distrib.map(Long, Lat, log2.rsr, pch = 15, col.land = "steelblue2"))
+
+pri.pred$log2.rsr <- exp(sar.predict(reoc.rsr.log2.op0, newdata = pri.pred, olddata = ldg.m.data)[, 1] - 1)
+summary(pri.pred$log2.rsr)
+with(pri.pred, distrib.map(Long, Lat, log2.rsr, pch = 15, col.land = "steelblue2"))
+
+with(ypr.pred, plot(Lat, log2.rsr, pch = "."))
+with(lut.pred, points(Lat, log2.rsr, pch = ".", col = 2))
+with(bar.pred, points(Lat, log2.rsr, pch = ".", col = 3))
+with(pri.pred, points(Lat, log2.rsr, pch = ".", col = 4))
+
+# basically ridiculous
+
+
+## 4. Try cutting out the extra salinity -----------------------------------
+# use the same model, but exclude points where salinity is < 25psu
+with(ypr.pred[ypr.pred$meanSal.0m > 25,], distrib.map(Long, Lat, rarefy.sr, pch = 15, col.land = "steelblue2"))
+with(lut.pred[ypr.pred$meanSal.0m > 25,], distrib.map(Long, Lat, rarefy.sr, pch = 15, col.land = "steelblue2"))
+with(bar.pred[ypr.pred$meanSal.0m > 25,], distrib.map(Long, Lat, rarefy.sr, pch = 15, col.land = "steelblue2"))
+with(pri.pred[ypr.pred$meanSal.0m > 25,], distrib.map(Long, Lat, rarefy.sr, pch = 15, col.land = "steelblue2"))
+
+with(ypr.pred[ypr.pred$meanSal.0m > 25,], plot(Lat, rarefy.sr, pch = "."))
+with(lut.pred[ypr.pred$meanSal.0m > 25,], points(Lat, rarefy.sr, pch = ".", col = 2))
+with(bar.pred[ypr.pred$meanSal.0m > 25,], points(Lat, rarefy.sr, pch = ".", col = 3))
+with(pri.pred[ypr.pred$meanSal.0m > 25,], points(Lat, rarefy.sr, pch = ".", col = 4))
+
+
+## 5. predicting with only temperature -----------------------------------------------------
 temp.mod <- lm(rarefy.sr ~ poly(meanSST.1deg, 3), data = ldg.m.data)
 summary(temp.mod)
 
-y.tmp.rsr <- predict(temp.mod, newdata = ypr.pred)
+# look for spatial autocorrelation in the residuals
+# using spline.correlog
+temp.mod.sac <- with(ldg.m.data, spline.correlog(Long, Lat, temp.mod$residuals, latlon = TRUE, resamp = 10))
+summary(temp.mod.sac)
+
+# run sar model
+ldg.coords <- cbind(ldg.m.data$Long,ldg.m.data$Lat)
+ldg.coords <- as.matrix(ldg.coords)
+temp.mod.sarW <- with(ldg.m.data, sar.optimised(temp.mod.sac$real$x.intercept, rarefy.sr ~ poly(meanSST.1deg, 3), ldg.coords, style = "W", tol = 4, longlat = TRUE, zero.policy = TRUE))
+temp.mod.nb <- dnearneigh(ldg.coords, 0, temp.mod.sarW$dist, longlat = TRUE)
+temp.mod.w <- nb2listw(temp.mod.nb, glist = NULL, style = "W", zero.policy = TRUE)
+temp.mod.op0 <- errorsarlm(temp.mod.sarW$mod, listw = temp.mod.w, zero.policy = TRUE, tol.solve = 1e-18)
+summary(temp.mod.op0, Nagelkerke = TRUE) # 0.78294 
+AIC(temp.mod.op0) # 2791.414
+
+# check predictions with recent data
+r.tmp.rsr <- sar.predict(temp.mod.op0, newdata = ldg.p.data, olddata = ldg.m.data)[, 1]
+summary(r.tmp.rsr)
+with(ldg.p.data, distrib.map(Long, Lat, r.tmp.rsr))
+# these look reasonable
+
+y.tmp.rsr <- sar.predict(temp.mod.op0, newdata = ypr.pred, olddata = ldg.m.data)[, 1]
 summary(y.tmp.rsr)
 with(ypr.pred, distrib.map(Long, Lat, y.tmp.rsr, pch = 15, col.land = "steelblue2"))
 
-l.tmp.rsr <- predict(temp.mod, newdata = lut.pred)
+l.tmp.rsr <- sar.predict(temp.mod.op0, newdata = lut.pred, olddata = ldg.m.data)[, 1]
 summary(l.tmp.rsr)
 with(lut.pred, distrib.map(Long, Lat, l.tmp.rsr, pch = 15, col.land = "steelblue2"))
 
-b.tmp.rsr <- predict(temp.mod, newdata = bar.pred)
+b.tmp.rsr <- sar.predict(temp.mod.op0, newdata = bar.pred, olddata = ldg.m.data)[, 1]
 summary(b.tmp.rsr)
 with(bar.pred, distrib.map(Long, Lat, b.tmp.rsr, pch = 15, col.land = "steelblue2"))
 
-p.tmp.rsr <- predict(temp.mod, newdata = pri.pred)
+p.tmp.rsr <- sar.predict(temp.mod.op0, newdata = pri.pred, olddata = ldg.m.data)[, 1]
 summary(p.tmp.rsr)
 with(pri.pred, distrib.map(Long, Lat, p.tmp.rsr, pch = 15, col.land = "steelblue2"))
-
-r.tmp.rsr <- predict(temp.mod, newdata = ldg.p.data)
-summary(r.tmp.rsr)
-with(ldg.p.data, distrib.map(Long, Lat, r.tmp.rsr, pch = 15, col.land = "steelblue2"))
 
 with(ldg.p.data, plot(Lat, r.tmp.rsr, pch = ".", col = 5, ylim = c(0, 20)))
 with(ypr.pred, points(Lat, y.tmp.rsr, pch = "."))
@@ -166,4 +241,107 @@ with(ypr.pred, points(-90:90, predict(gam(y.tmp.rsr ~ s(Lat)), data.frame(Lat = 
 with(lut.pred, points(-90:90, predict(gam(l.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2))
 with(bar.pred, points(-90:90, predict(gam(b.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
 with(pri.pred, points(-90:90, predict(gam(p.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
+
+
+# compare these predictions with the ols model
+r.tmp.rsr.ols <- predict(temp.mod, newdata = ldg.p.data)
+summary(r.tmp.rsr.ols)
+with(ldg.p.data, distrib.map(Long, Lat, r.tmp.rsr.ols))
+
+y.tmp.rsr.ols <- predict(temp.mod, newdata = ypr.pred)
+summary(y.tmp.rsr.ols)
+with(ypr.pred, distrib.map(Long, Lat, y.tmp.rsr.ols, pch = 15, col.land = "steelblue2"))
+
+l.tmp.rsr.ols <- predict(temp.mod, newdata = lut.pred)
+summary(l.tmp.rsr.ols)
+with(lut.pred, distrib.map(Long, Lat, l.tmp.rsr.ols, pch = 15, col.land = "steelblue2"))
+
+b.tmp.rsr.ols <- predict(temp.mod, newdata = bar.pred)
+summary(b.tmp.rsr.ols)
+with(bar.pred, distrib.map(Long, Lat, b.tmp.rsr.ols, pch = 15, col.land = "steelblue2"))
+
+p.tmp.rsr.ols <- predict(temp.mod, newdata = pri.pred)
+summary(p.tmp.rsr.ols)
+with(pri.pred, distrib.map(Long, Lat, p.tmp.rsr.ols, pch = 15, col.land = "steelblue2"))
+
+with(ldg.p.data, plot(Lat, r.tmp.rsr.ols, pch = ".", col = 5, ylim = c(0, 20)))
+with(ypr.pred, points(Lat, y.tmp.rsr.ols, pch = "."))
+with(lut.pred, points(Lat, l.tmp.rsr.ols, pch = ".", col = 2))
+with(bar.pred, points(Lat, b.tmp.rsr.ols, pch = ".", col = 3))
+with(pri.pred, points(Lat, p.tmp.rsr.ols, pch = ".", col = 4))
+
+with(ldg.p.data, points(-90:90, predict(gam(r.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+with(ypr.pred, points(-90:90, predict(gam(y.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -90:90)), type = "l"))
+with(lut.pred, points(-90:90, predict(gam(l.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2))
+with(bar.pred, points(-90:90, predict(gam(b.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
+with(pri.pred, points(-90:90, predict(gam(p.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
+
+# basically the model predicts diversity drops rapidly with higher T
+plot(-5:50, predict(temp.mod, newdata = data.frame(meanSST.1deg = -5:50)))
+
+
+# 5. Andy's model ---------------------------------------------------------
+reoc.rsr.log3.l0 <- lm(rarefy.sr ~ (poly(meanSST.1deg, 3) + sdSST.1deg + log(mean.pt + 1) + log(depth10deg + 1) + poly(meanSal.0m,3) + sdSal.0m + dissolution)^2, data = ldg.m.data)
+summary(reoc.rsr.log3.l0)
+
+predict()
+
+# look for spatial autocorrelation in the residuals
+# using spline.correlog
+reoc.rsr.log3.l0.sac <- with(ldg.m.data, spline.correlog(Long, Lat, reoc.rsr.log3.l0$residuals, latlon = TRUE, resamp = 10))
+summary(reoc.rsr.log3.l0.sac)
+
+# run sar model
+ldg.coords <- cbind(ldg.m.data$Long,ldg.m.data$Lat)
+ldg.coords <- as.matrix(ldg.coords)
+reoc.rsr.log3.sarW <- with(ldg.m.data, sar.optimised(reoc.rsr.log3.l0.sac$real$x.intercept,rarefy.sr ~ (poly(meanSST.1deg, 3) + sdSST.1deg + log(mean.pt + 1) + log(depth10deg + 1) + poly(meanSal.0m,3) + sdSal.0m + dissolution)^2, ldg.coords, style = "W", tol = 4, longlat = TRUE, zero.policy = TRUE))
+reoc.log3.op.nb <- dnearneigh(ldg.coords, 0, reoc.rsr.log3.sarW$dist, longlat = TRUE)
+reoc.log3.op.w <- nb2listw(reoc.log3.op.nb, glist = NULL, style = "W", zero.policy = TRUE)
+
+
+reoc.rsr.log3.op0 <- errorsarlm(reoc.rsr.log3.sarW$mod, listw = reoc.log3.op.w, zero.policy = TRUE, tol.solve = 1e-18)
+summary(reoc.rsr.log3.op0, Nagelkerke = TRUE) # 0.89483
+
+reoc.rsr.log3.op0 <- errorsarlm(update(reoc.rsr.log3.sarW$mod, ~, listw = reoc.log3.op.w, zero.policy = TRUE, tol.solve = 1e-18)
+summary(reoc.rsr.log3.op0, Nagelkerke = TRUE) # 0.89483
+
+
+
+AIC(reoc.rsr.log3.op0) # -697.957
+
+# check predictions with recent data
+recent.log3.rsr <- sar.predict(reoc.rsr.log3.op0, newdata = ldg.p.data, olddata = ldg.m.data)[, 1]
+with(ldg.p.data, distrib.map(Long, Lat, recent.log3.rsr))
+with(ldg.p.data[recent.log3.rsr < 0 | recent.log3.rsr > 30, ], distrib.map(Long, Lat, recent.log3.rsr))
+with(ldg.p.data[recent.log3.rsr > 0 & recent.log3.rsr < 30, ], distrib.map(Long, Lat, recent.log3.rsr[recent.log3.rsr > 0 & recent.log3.rsr < 30]))
+
+# predict
+ypr.pred$log3.rsr <- sar.predict(reoc.rsr.log3.op0, newdata = ypr.pred, olddata = ldg.m.data)[, 1]
+summary(ypr.pred$log3.rsr)
+with(ypr.pred[ypr.pred$meanSal.0m > 30 & ypr.pred$log3.rsr > 0 & ypr.pred$log3.rsr < 100, ], distrib.map(Long, Lat, log3.rsr, pch = 15, col.land = "steelblue2"))
+
+lut.pred$log3.rsr <- sar.predict(reoc.rsr.log3.op0, newdata = lut.pred, olddata = ldg.m.data)[, 1]
+summary(lut.pred$log3.rsr)
+with(lut.pred, distrib.map(Long, Lat, log3.rsr, pch = 15, col.land = "steelblue2"))
+
+bar.pred$log3.rsr <- sar.predict(reoc.rsr.log3.op0, newdata = bar.pred, olddata = ldg.m.data)[, 1]
+summary(bar.pred$log3.rsr)
+with(bar.pred, distrib.map(Long, Lat, log3.rsr, pch = 15, col.land = "steelblue2"))
+
+pri.pred$log3.rsr <- sar.predict(reoc.rsr.log3.op0, newdata = pri.pred, olddata = ldg.m.data)[, 1]
+summary(pri.pred$log3.rsr)
+with(pri.pred, distrib.map(Long, Lat, log3.rsr, pch = 15, col.land = "steelblue2"))
+
+with(ldg.p.data[recent.log3.rsr > 0 & recent.log3.rsr < 30, ], plot(Lat, recent.log3.rsr[recent.log3.rsr > 0 & recent.log3.rsr < 30], pch = ".", col = 5))
+with(ldg.m.data, points(Lat, rarefy.sr, pch = 16, col = 6))
+with(ypr.pred[ypr.pred$meanSal.0m > 30 & ypr.pred$log3.rsr > 0 & ypr.pred$log3.rsr < 60, ], points(Lat, log3.rsr, pch = "."))
+with(lut.pred[lut.pred$meanSal.0m > 30 & lut.pred$log3.rsr > 0 & lut.pred$log3.rsr < 60, ], points(Lat, log3.rsr, pch = ".", col = 2))
+with(bar.pred[bar.pred$meanSal.0m > 30 & bar.pred$log3.rsr > 0 & bar.pred$log3.rsr < 60, ], points(Lat, log3.rsr, pch = ".", col = 3))
+with(pri.pred[pri.pred$meanSal.0m > 30 & pri.pred$log3.rsr > 0 & pri.pred$log3.rsr < 60, ], points(Lat, log3.rsr, pch = ".", col = 4))
+
+with(ldg.p.data[recent.log3.rsr > 0 & recent.log3.rsr < 30, ], points(-90:90, predict(gam(recent.log3.rsr[recent.log3.rsr > 0 & recent.log3.rsr < 30] ~ s(Lat, k = 20)), data.frame(Lat = -90:90)), type = "l", col = 5))
+with(ypr.pred[ypr.pred$meanSal.0m > 30 & ypr.pred$log3.rsr > 0 & ypr.pred$log3.rsr < 60, ], points(-90:90, predict(gam(log3.rsr ~ s(Lat, k = 20)), data.frame(Lat = -90:90)), type = "l"))
+with(lut.pred[lut.pred$meanSal.0m > 30 & lut.pred$log3.rsr > 0 & lut.pred$log3.rsr < 60, ], points(-90:90, predict(gam(log3.rsr ~ s(Lat, k = 20)), data.frame(Lat = -90:90)), type = "l", col = 2))
+with(bar.pred[bar.pred$meanSal.0m > 30 & bar.pred$log3.rsr > 0 & bar.pred$log3.rsr < 60, ], points(-90:90, predict(gam(log3.rsr ~ s(Lat, k = 20)), data.frame(Lat = -90:90)), type = "l", col = 3))
+with(pri.pred[pri.pred$meanSal.0m > 30 & pri.pred$log3.rsr > 0 & pri.pred$log3.rsr < 60, ], points(-90:90, predict(gam(log3.rsr ~ s(Lat, k = 20)), data.frame(Lat = -90:90)), type = "l", col = 4))
 
