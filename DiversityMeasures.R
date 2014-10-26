@@ -302,17 +302,17 @@ EO_abun_CBEP[1:10,]
 par(mfrow = c(1, 3))
 with(max.abun[max.abun$Period == "Lower Eocene", ], plot(abs(pal.lat.m), SR, pch = 16, col = (pal.lat.m > 0) + 1))
 modL <- with(max.abun[max.abun$Period == "Lower Eocene", ], lm(SR ~ abs(pal.lat.m)))
-points(0:70, predict(modL, data.frame(pal.lat.m = 0:70)), type = "l")
+#points(0:70, predict(modL, data.frame(pal.lat.m = 0:70)), type = "l")
 with(max.abun[max.abun$Period == "Lower Eocene", ], anova(modL, lm(SR ~ 1)))
 
 with(max.abun[max.abun$Period == "Middle Eocene", ], plot(abs(pal.lat.m), SR, pch = 16, col = (pal.lat.m > 0) + 1))
 modM <- with(max.abun[max.abun$Period == "Middle Eocene", ], lm(SR ~ abs(pal.lat.m)))
-points(0:70, predict(modM, data.frame(pal.lat.m = 0:70)), type = "l")
+#points(0:70, predict(modM, data.frame(pal.lat.m = 0:70)), type = "l")
 with(max.abun[max.abun$Period == "Middle Eocene", ], anova(modM, lm(SR ~ 1)))
 
 with(max.abun[max.abun$Period == "Upper Eocene", ], plot(abs(pal.lat.m), SR, pch = 16, col = (pal.lat.m > 0) + 1))
 modU <- with(max.abun[max.abun$Period == "Upper Eocene", ], lm(SR ~ abs(pal.lat.m)))
-points(0:70, predict(modU, data.frame(pal.lat.m = 0:70)), type = "l")
+#points(0:70, predict(modU, data.frame(pal.lat.m = 0:70)), type = "l")
 with(max.abun[max.abun$Period == "Upper Eocene", ], anova(modU, lm(SR ~ 1)))
 
 
