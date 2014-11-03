@@ -236,27 +236,11 @@ with(lut.pred, points(Lat, l.tmp.rsr, pch = ".", col = 2))
 with(bar.pred, points(Lat, b.tmp.rsr, pch = ".", col = 3))
 with(pri.pred, points(Lat, p.tmp.rsr, pch = ".", col = 4))
 
-with(ldg.p.data, points(-90:90, predict(gam(r.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5, lwd = 2))
-with(ypr.pred, points(-90:90, predict(gam(y.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", lwd = 2))
-with(lut.pred, points(-90:90, predict(gam(l.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2, lwd = 2))
-with(bar.pred, points(-90:90, predict(gam(b.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3, lwd = 2))
-with(pri.pred, points(-90:90, predict(gam(p.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4, lwd = 2))
-
-legend("topright", c("Ypresian", "Lutetian", "Bartonian", "Priabonian", "Recent"), col = 1:5, lwd = 2)
-
-with(ldg.p.data, plot(Lat, r.tmp.rsr, pch = ".", col = 5, ylim = c(0, 20)))
-with(ypr.pred, points(Lat, y.tmp.rsr, pch = "."))
-with(lut.pred, points(Lat, l.tmp.rsr, pch = ".", col = 2))
-with(pri.pred, points(Lat, p.tmp.rsr, pch = ".", col = 4))
-
-with(ldg.p.data, points(-60:75, predict(gam(r.tmp.rsr ~ s(Lat)), data.frame(Lat = -60:75)), type = "l", col = 5, lwd = 2))
-with(ypr.pred, points(-90:90, predict(gam(y.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", lwd = 2))
-with(lut.pred, points(-90:90, predict(gam(l.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2, lwd = 2))
-with(pri.pred, points(-90:90, predict(gam(p.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4, lwd = 2))
-
-legend("topright", c("Early Eocene", "Middle Eocene", "Late Eocene", "Recent"), col = c(1:2,4:5), lwd = 2)
-
-
+with(ldg.p.data, points(-90:90, predict(gam(r.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+with(ypr.pred, points(-90:90, predict(gam(y.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l"))
+with(lut.pred, points(-90:90, predict(gam(l.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2))
+with(bar.pred, points(-90:90, predict(gam(b.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
+with(pri.pred, points(-90:90, predict(gam(p.tmp.rsr ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
 
 
 # compare these predictions with the ols model
@@ -280,11 +264,16 @@ p.tmp.rsr.ols <- predict(temp.mod, newdata = pri.pred)
 summary(p.tmp.rsr.ols)
 with(pri.pred, distrib.map(Long, Lat, p.tmp.rsr.ols, pch = 15, col.land = "steelblue2"))
 
+e.tmp.rsr.ols <- predict(temp.mod, newdata = temp.bi.early)
+u.tmp.rsr.ols <- predict(temp.mod, newdata = temp.bi.late)
+
 with(ldg.p.data, plot(Lat, r.tmp.rsr.ols, pch = ".", col = 5, ylim = c(0, 20), ylab = "predicted richness"))
 with(ypr.pred, points(Lat, y.tmp.rsr.ols, pch = "."))
 with(lut.pred, points(Lat, l.tmp.rsr.ols, pch = ".", col = 2))
 with(bar.pred, points(Lat, b.tmp.rsr.ols, pch = ".", col = 3))
 with(pri.pred, points(Lat, p.tmp.rsr.ols, pch = ".", col = 4))
+with(temp.bi.early, points(Lat, e.tmp.rsr.ols, pch = 16, col = 5))
+with(temp.bi.late, points(Lat, u.tmp.rsr.ols, pch = 16, col = 6))
 
 with(ldg.p.data, points(-90:90, predict(gam(r.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
 with(ypr.pred, points(-90:90, predict(gam(y.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -90:90)), type = "l"))
