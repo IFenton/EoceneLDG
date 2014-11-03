@@ -267,13 +267,28 @@ with(lut.env, points(mnSST ~ Lat, pch = ".", col = 2))
 with(bar.env, points(mnSST ~ Lat, pch = ".", col = 3))
 with(pri.env, points(mnSST ~ Lat, pch = ".", col = 4))
 
-with(ypr.env, points(-90:90, predict(gam(mnSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l"))
-with(lut.env, points(-90:90, predict(gam(mnSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2))
-with(bar.env, points(-90:90, predict(gam(mnSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
-with(pri.env, points(-90:90, predict(gam(mnSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
+with(ypr.env, points(-90:90, predict(gam(mnSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", lwd = 2))
+with(lut.env, points(-90:90, predict(gam(mnSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2, lwd = 2))
+with(bar.env, points(-90:90, predict(gam(mnSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3, lwd = 2))
+with(pri.env, points(-90:90, predict(gam(mnSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4, lwd = 2))
 
 with(ldg.p.data, points(meanSST.1deg ~ Lat, pch = ".", col = 5))
-with(ldg.p.data, points(-90:90, predict(gam(meanSST.1deg ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+with(ldg.p.data, points(-90:90, predict(gam(meanSST.1deg ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5, lwd = 2))
+legend("topright", c("Ypresian", "Lutetian", "Bartonian", "Priabonian", "Recent"), col = 1:5, lwd = 2)
+
+with(ypr.env, plot(mnSST ~ Lat, pch = "."))
+with(lut.env, points(mnSST ~ Lat, pch = ".", col = 2))
+with(pri.env, points(mnSST ~ Lat, pch = ".", col = 4))
+
+with(ypr.env, points(-90:90, predict(gam(mnSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", lwd = 2))
+with(lut.env, points(-90:90, predict(gam(mnSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2, lwd = 2))
+with(pri.env, points(-90:90, predict(gam(mnSST ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4, lwd = 2))
+
+with(ldg.p.data, points(meanSST.1deg ~ Lat, pch = ".", col = 5))
+with(ldg.p.data, points(-90:90, predict(gam(meanSST.1deg ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5, lwd = 2))
+legend("topright", c("Early Eocene", "Middle Eocene", "Late Eocene", "Recent"), col = c(1:2,4:5), lwd = 2)
+
+
 
 # again, checked against Gordon's talk
 # given this matches, it seems likely that the method I've used to extract the data is working. (Although this needs checking for the depth values).
