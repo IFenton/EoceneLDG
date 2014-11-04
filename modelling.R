@@ -288,7 +288,7 @@ with(temp.bi.late, points(-70:80, predict(gam(u.tmp.rsr.ols ~ s(Lat)), data.fram
 plot(-5:50, predict(temp.mod, newdata = data.frame(meanSST.1deg = -5:50)))
 
 
-# 5. Andy's model ---------------------------------------------------------
+# 6. Andy's model ---------------------------------------------------------
 reoc.rsr.log3.l0 <- lm(rarefy.sr ~ (poly(meanSST.1deg, 3) + sdSST.1deg + log(mean.pt + 1) + log(depth10deg + 1) + poly(meanSal.0m,3) + sdSal.0m + dissolution)^2, data = ldg.m.data)
 summary(reoc.rsr.log3.l0)
 
@@ -417,6 +417,19 @@ for(i in seq(0.01, 1, by = 0.01)) {
   with(tmp, points(-70:80, predict(gam(tmp.pred ~ s(Lat)), data.frame(Lat = -70:80)), type = "l", col = rainbow(120)[i*100]))
 }
 
+# adding a constant
+plot(abs(LE.lat), LE.SR, pch = 16, ylim = c(0, 35))
+points(0:70, rq.LE, type = "l", lwd = 2)
+
+with(temp.bi.early, points(-70:80, predict(gam(e.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -70:80)), type = "l", col = 6, lwd = 2))
+
+for(i in 0:15) {
+  tmp <- temp.bi.early
+  tmp$meanSST.1deg <- tmp$meanSST.1deg - i
+  tmp$tmp.pred <- predict(temp.mod, newdata = tmp)
+  with(tmp, points(-70:80, predict(gam(tmp.pred ~ s(Lat)), data.frame(Lat = -70:80)), type = "l", col = rainbow(20)[i+1]))
+}
+
 # upper eocene
 rq.UE <- rq(UE.SR ~ poly(abs(UE.lat),3), tau = 0.75)
 rq.UE <- predict(rq.UE, newdata = data.frame(UE.lat = 0:70))
@@ -433,4 +446,15 @@ for(i in seq(0.01, 1, by = 0.01)) {
   with(tmp, points(-70:80, predict(gam(tmp.pred ~ s(Lat)), data.frame(Lat = -70:80)), type = "l", col = rainbow(120)[i*100], lwd = 2))
 }
 
+# adding a constant
+with(temp.bi.late, plot(-70:80, predict(gam(u.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -70:80)), type = "l", col = 7, lwd = 2, ylab = "SR", xlab = "Lat"))
+points(0:70, pred.UE.75, type = "l", lwd = 2, col = 4)
+points(c(-70:0, 0:70), c(rev(pred.UE.75), pred.UE.75), type = "l", lwd = 2, col = 4)
+
+for(i in 0:15) {
+  tmp <- temp.bi.late
+  tmp$meanSST.1deg <- tmp$meanSST.1deg - i
+  tmp$tmp.pred <- predict(temp.mod, newdata = tmp)
+  with(tmp, points(-70:80, predict(gam(tmp.pred ~ s(Lat)), data.frame(Lat = -70:80)), type = "l", col = rainbow(20)[i+1]))
+}
 
