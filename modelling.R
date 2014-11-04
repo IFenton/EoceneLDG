@@ -272,14 +272,17 @@ with(ypr.pred, points(Lat, y.tmp.rsr.ols, pch = "."))
 with(lut.pred, points(Lat, l.tmp.rsr.ols, pch = ".", col = 2))
 with(bar.pred, points(Lat, b.tmp.rsr.ols, pch = ".", col = 3))
 with(pri.pred, points(Lat, p.tmp.rsr.ols, pch = ".", col = 4))
-with(temp.bi.early, points(Lat, e.tmp.rsr.ols, pch = 16, col = 5))
-with(temp.bi.late, points(Lat, u.tmp.rsr.ols, pch = 16, col = 6))
+with(temp.bi.early, points(Lat, e.tmp.rsr.ols, pch = 16, col = 6))
+with(temp.bi.late, points(Lat, u.tmp.rsr.ols, pch = 16, col = 7))
 
-with(ldg.p.data, points(-90:90, predict(gam(r.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 5))
+with(ldg.p.data, points(-65:70, predict(gam(r.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -65:70)), type = "l", col = 5))
 with(ypr.pred, points(-90:90, predict(gam(y.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -90:90)), type = "l"))
 with(lut.pred, points(-90:90, predict(gam(l.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 2))
 with(bar.pred, points(-90:90, predict(gam(b.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 3))
 with(pri.pred, points(-90:90, predict(gam(p.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -90:90)), type = "l", col = 4))
+with(temp.bi.early, points(-70:80, predict(gam(e.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -70:80)), type = "l", col = 6))
+with(temp.bi.late, points(-70:80, predict(gam(u.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -70:80)), type = "l", col = 7))
+
 
 # basically the model predicts diversity drops rapidly with higher T
 plot(-5:50, predict(temp.mod, newdata = data.frame(meanSST.1deg = -5:50)))
@@ -337,7 +340,7 @@ pri.pred$log3.rsr <- sar.predict(reoc.rsr.log3.op0, newdata = pri.pred, olddata 
 summary(pri.pred$log3.rsr)
 with(pri.pred, distrib.map(Long, Lat, log3.rsr, pch = 15, col.land = "steelblue2"))
 
-with(ldg.p.data[recent.log3.rsr > 0 & recent.log3.rsr < 30, ], plot(Lat, recent.log3.rsr[recent.log3.rsr > 0 & recent.log3.rsr < 30], pch = ".", col = 5))
+with(ldg.p.data[recent.log3.rsr > 0 & recent.log3.rsr < 30, ], plot(Lat, recent.log3.rsr[recent.log3.rsr > 0 & recent.log3.rsr < 30], pch = ".", col = 5, ylab = "rarefied richness"))
 #with(ldg.m.data, points(Lat, rarefy.sr, pch = 16, col = 6))
 with(ypr.pred[ypr.pred$meanSal.0m > 30 & ypr.pred$log3.rsr > 0 & ypr.pred$log3.rsr < 60, ], points(Lat, log3.rsr, pch = "."))
 with(lut.pred[lut.pred$meanSal.0m > 30 & lut.pred$log3.rsr > 0 & lut.pred$log3.rsr < 60, ], points(Lat, log3.rsr, pch = ".", col = 2))
@@ -349,4 +352,85 @@ with(ypr.pred[ypr.pred$meanSal.0m > 30 & ypr.pred$log3.rsr > 0 & ypr.pred$log3.r
 with(lut.pred[lut.pred$meanSal.0m > 30 & lut.pred$log3.rsr > 0 & lut.pred$log3.rsr < 60, ], points(-90:90, predict(gam(log3.rsr ~ s(Lat, k = 20)), data.frame(Lat = -90:90)), type = "l", col = 2))
 with(bar.pred[bar.pred$meanSal.0m > 30 & bar.pred$log3.rsr > 0 & bar.pred$log3.rsr < 60, ], points(-90:90, predict(gam(log3.rsr ~ s(Lat, k = 20)), data.frame(Lat = -90:90)), type = "l", col = 3))
 with(pri.pred[pri.pred$meanSal.0m > 30 & pri.pred$log3.rsr > 0 & pri.pred$log3.rsr < 60, ], points(-90:90, predict(gam(log3.rsr ~ s(Lat, k = 20)), data.frame(Lat = -90:90)), type = "l", col = 4))
+
+
+## predictions for LE/ME/UE sites for GCM
+LE.env$pred.rsr <- sar.predict(reoc.rsr.log3.op0, newdata = LE.env, olddata = ldg.m.data)[, 1]
+
+summary(LE.env$pred.rsr)
+
+with(LE.env, points(Lat, pred.rsr, pch = 16, col = 6))
+
+ME.env$pred.rsr <- sar.predict(reoc.rsr.log3.op0, newdata = ME.env, olddata = ldg.m.data)[, 1]
+
+summary(ME.env$pred.rsr)
+
+with(ME.env, points(Lat, pred.rsr, pch = 16, col = 7))
+
+UE.env$pred.rsr <- sar.predict(reoc.rsr.log3.op0, newdata = UE.env, olddata = ldg.m.data)[, 1]
+
+summary(UE.env$pred.rsr)
+
+with(UE.env, points(Lat, pred.rsr, pch = 16, col = 8))
+
+legend("topright", c("Ypresian", "Lutetian", "Bartonian", "Priabonian", "Recent", "Lower Eocene sites", "Middle Eocene sites", "Upper Eocene sites"), pch = 16, col = 1:8)
+
+with(LE.env, plot(pred.rsr, SR, xlim = c(0, 40), pch = 16))
+with(ME.env, points(pred.rsr, SR, col = 2, pch = 16))
+with(UE.env, points(pred.rsr, SR, col = 4, pch = 16))
+legend("topright", c("Early Eocene", "Middle Eocene", "Late Eocene"), pch = 16, col = c(1, 2, 4))
+
+
+## predictions for LE/ME/UE sites for proxy data
+LE.prox.env$pred.rsr <- sar.predict(reoc.rsr.log3.op0, newdata = LE.prox.env, olddata = ldg.m.data)[, 1]
+
+summary(LE.prox.env$pred.rsr)
+
+with(LE.prox.env, points(Lat, pred.rsr, pch = 16, col = 6))
+
+UE.prox.env$pred.rsr <- sar.predict(reoc.rsr.log3.op0, newdata = UE.prox.env, olddata = ldg.m.data)[, 1]
+
+summary(UE.prox.env$pred.rsr)
+
+with(UE.prox.env, points(Lat, pred.rsr, pch = 16, col = 8))
+
+with(LE.prox.env, plot(pred.rsr, SR, xlim = c(0, 40), pch = 16))
+with(UE.prox.env, points(pred.rsr, SR, col = 4, pch = 16))
+legend("topright", c("Early Eocene", "Middle Eocene", "Late Eocene"), pch = 16, col = c(1, 2, 4))
+
+
+# 7. Matching quantiles to proxy ------------------------------------------
+
+# lower eocene
+rq.LE <- rq(LE.SR ~ poly(abs(LE.lat),3), tau = 0.75)
+rq.LE <- predict(rq.LE, newdata = data.frame(LE.lat = 0:70))
+
+plot(abs(LE.lat), LE.SR, pch = 16, ylim = c(0, 35))
+points(0:70, rq.LE, type = "l", lwd = 2)
+
+with(temp.bi.early, points(-70:80, predict(gam(e.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -70:80)), type = "l", col = 6, lwd = 2))
+
+for(i in seq(0.01, 1, by = 0.01)) {
+  tmp <- temp.bi.early
+  tmp$meanSST.1deg <- i*tmp$meanSST.1deg
+  tmp$tmp.pred <- predict(temp.mod, newdata = tmp)
+  with(tmp, points(-70:80, predict(gam(tmp.pred ~ s(Lat)), data.frame(Lat = -70:80)), type = "l", col = rainbow(120)[i*100]))
+}
+
+# upper eocene
+rq.UE <- rq(UE.SR ~ poly(abs(UE.lat),3), tau = 0.75)
+rq.UE <- predict(rq.UE, newdata = data.frame(UE.lat = 0:70))
+
+plot(abs(UE.lat), UE.SR, pch = 16, ylim = c(0, 35))
+points(0:70, rq.UE, type = "l", lwd = 2, col = 4)
+
+with(temp.bi.late, points(-70:80, predict(gam(u.tmp.rsr.ols ~ s(Lat)), data.frame(Lat = -70:80)), type = "l", col = 7, lwd = 2))
+
+for(i in seq(0.01, 1, by = 0.01)) {
+  tmp <- temp.bi.late
+  tmp$meanSST.1deg <- i*tmp$meanSST.1deg
+  tmp$tmp.pred <- predict(temp.mod, newdata = tmp)
+  with(tmp, points(-70:80, predict(gam(tmp.pred ~ s(Lat)), data.frame(Lat = -70:80)), type = "l", col = rainbow(120)[i*100], lwd = 2))
+}
+
 
