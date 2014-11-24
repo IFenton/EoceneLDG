@@ -321,6 +321,4 @@ with(max.abun[max.abun$Period == "Upper Eocene", ], anova(modU, lm(SR ~ 1)))
 
 ## 4. Calculate lineage ages --------------------------------------------------
 
-
-
-
+ldg.data$simpsonEve <- sapply(1:nrow(ldg.data), function (i) diversity(ldg.data[i, which(colnames(ldg.data) %in% bfd.species)], "invsimpson") / ldg.data$sp.rich[i])
